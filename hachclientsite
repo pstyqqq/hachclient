@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpookyTimeClient</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #main-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        #modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+            max-width: 90%;
+            text-align: center;
+        }
+        #modal.show {
+            display: block;
+        }
+        .action-button {
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .action-button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <h1 class="text-3xl font-bold text-cyan-400 mb-2">catclient</h1>
+        <p class="text-lg text-gray-300 mb-4">Версия: Release</p>
+        <p class="text-sm text-gray-400 mb-6">Нажмите, чтобы открыть ссылку на скачивание</p>
+        <div class="flex justify-center space-x-4">
+            <button id="downloadBtn" class="action-button bg-purple-600 hover:bg-purple-800 text-white font-semibold py-2 px-6 rounded-lg">Скачать</button>
+            <button id="discordBtn" class="action-button bg-blue-600 hover:bg-blue-800 text-white font-semibold py-2 px-6 rounded-lg">Discord</button>
+        </div>
+    </div>
+    <div id="modal">
+        <h2 id="modalTitle" class="text-2xl font-bold mb-4">Информация</h2>
+        <p id="modalContent" class="mb-6 text-lg">Выберите действие для получения информации.</p>
+        <button id="closeModal" class="bg-gray-600 hover:bg-gray-800 text-white font-semibold py-2 px-6 rounded-lg">Закрыть</button>
+    </div>
+    <script>
+        // Настройка сцены Three.js
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Шейдеры для волн
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const fragmentShader = `
+            uniform float time;
+            varying vec2 vUv;
+            void main() {
+                vec2 uv = vUv;
+                float wave1 = sin(uv.y * 10.0 + time * 2.0) * 0.1;
+                float wave2 = sin(uv.y * 5.0 - time * 1.5 + 1.0) * 0.05;
+                float wave = wave1 + wave2;
+                vec3 color = vec3(0.1, 0.2, 0.4) + vec3(wave * 0.1, wave * 0.2, wave * 0.3);
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        // Создание плоскости с шейдерным материалом
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const material = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                time: { value: 0.0 }
+            }
+        });
+        const plane = new THREE.Mesh(geometry, material);
+        scene.add(plane);
+
+        // Анимация
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+            material.uniforms.time.value = time;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Обработка изменения размера окна
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Функциональность кнопок
+        const downloadBtn = document.getElementById('downloadBtn');
+        const discordBtn = document.getElementById('discordBtn');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        const closeModal = document.getElementById('closeModal');
+
+        downloadBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Скачать';
+            modalContent.textContent = 'Ссылка на скачивание доступна после регистрации. Присоединяйтесь к нашему Discord!';
+            modal.classList.add('show');
+        });
+
+        discordBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Discord';
+            modalContent.textContent = 'Присоединяйтесь к нашему сообществу: https://discord.gg/4dAUM4JaSw';
+            modal.classList.add('show');
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.classList.remove('show');
+        });
+    </script>
+</body>
+</html>
